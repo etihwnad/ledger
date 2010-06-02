@@ -363,7 +363,9 @@ void export_commodity()
 
     .add_property("base_symbol", &commodity_t::base_symbol)
     .add_property("symbol", &commodity_t::symbol)
+#if 0
     .add_property("mapping_key", &commodity_t::mapping_key)
+#endif
 
     .add_property("name", &commodity_t::name, &commodity_t::set_name)
     .add_property("note", &commodity_t::note, &commodity_t::set_note)

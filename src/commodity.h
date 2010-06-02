@@ -239,8 +239,10 @@ protected:
 
   commodity_pool_t * parent_;
   optional<string>   qualified_symbol;
+#if 0
   optional<string>   mapping_key_;
   bool               annotated;
+#endif
 
   explicit commodity_t(commodity_pool_t *        _parent,
                        const shared_ptr<base_t>& _base)
@@ -265,6 +267,9 @@ public:
   }
 
   static bool symbol_needs_quotes(const string& symbol);
+
+  annotated_commodity_t * find_annotated(const annotation_t& details,
+					 const bool auto_create = false);
 
   virtual commodity_t& referent() {
     return *this;
@@ -293,12 +298,14 @@ public:
     return qualified_symbol ? *qualified_symbol : base_symbol();
   }
 
+#if 0
   string mapping_key() const {
     if (mapping_key_)
       return *mapping_key_;
     else
       return base_symbol();
   }
+#endif
 
   optional<string> name() const {
     return base->name;
@@ -423,7 +430,9 @@ private:
     ar & base;
     ar & parent_;
     ar & qualified_symbol;
+#if 0
     ar & mapping_key_;
+#endif
     ar & annotated;
   }
 #endif // HAVE_BOOST_SERIALIZATION
