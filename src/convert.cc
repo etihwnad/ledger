@@ -92,8 +92,9 @@ value_t convert_command(call_scope_t& args)
 
   while (xact_t * xact = reader.read_xact(journal, bucket)) {
     if (report.HANDLED(invert)) {
-      foreach (post_t * post, xact->posts)
+      foreach (post_t * post, xact->posts, posts_list) {
         post->amount.in_place_negate();
+      } foreach_end ();
     }
       
     bool matched = false;
@@ -101,7 +102,7 @@ value_t convert_command(call_scope_t& args)
       post_map_t::iterator i = post_map.find(- xact->posts.front()->amount);
       if (i != post_map.end()) {
         std::list<post_t *>& post_list((*i).second);
-        foreach (post_t * post, post_list) {
+        foreach (post_t * post, post_list, std::list<post_t *>) {
           if (xact->code && post->xact->code &&
               *xact->code == *post->xact->code) {
             matched = true;
@@ -112,7 +113,7 @@ value_t convert_command(call_scope_t& args)
             break;
           }
         }
-      }
+      } foreach_end ();
     }
 
     if (matched) {

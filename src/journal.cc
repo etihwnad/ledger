@@ -66,14 +66,17 @@ journal_t::~journal_t()
 
   // Don't bother unhooking each xact's posts from the accounts they refer to,
   // because all accounts are about to be deleted.
-  foreach (xact_t * xact, xacts)
+  foreach (xact_t * xact, xacts, xacts_list) {
     checked_delete(xact);
+  } foreach_end ();
 
-  foreach (auto_xact_t * xact, auto_xacts)
+  foreach (auto_xact_t * xact, auto_xacts, auto_xacts_list) {
     checked_delete(xact);
+  } foreach_end ();
 
-  foreach (period_xact_t * xact, period_xacts)
+  foreach (period_xact_t * xact, period_xacts, period_xacts_list) {
     checked_delete(xact);
+  } foreach_end ();
   
   checked_delete(master);
 }
@@ -122,8 +125,9 @@ bool journal_t::add_xact(xact_t * xact)
 
 void journal_t::extend_xact(xact_base_t * xact)
 {
-  foreach (auto_xact_t * auto_xact, auto_xacts)
+  foreach (auto_xact_t * auto_xact, auto_xacts, auto_xacts_list) {
     auto_xact->extend_xact(*xact);
+  } foreach_end ();
 }
 
 bool journal_t::remove_xact(xact_t * xact)
@@ -196,17 +200,20 @@ std::size_t journal_t::read(const path& pathname,
 
 bool journal_t::has_xdata()
 {
-  foreach (xact_t * xact, xacts)
+  foreach (xact_t * xact, xacts, xacts_list) {
     if (xact->has_xdata())
       return true;
+  } foreach_end ();
 
-  foreach (auto_xact_t * xact, auto_xacts)
+  foreach (auto_xact_t * xact, auto_xacts, auto_xacts_list) {
     if (xact->has_xdata())
       return true;
+  } foreach_end ();
 
-  foreach (period_xact_t * xact, period_xacts)
+  foreach (period_xact_t * xact, period_xacts, period_xacts_list) {
     if (xact->has_xdata())
       return true;
+  } foreach_end ();
 
   if (master->has_xdata() || master->children_with_xdata())
     return true;
@@ -216,17 +223,20 @@ bool journal_t::has_xdata()
 
 void journal_t::clear_xdata()
 {
-  foreach (xact_t * xact, xacts)
+  foreach (xact_t * xact, xacts, xacts_list) {
     if (! xact->has_flags(ITEM_TEMP))
       xact->clear_xdata();
+  } foreach_end ();
 
-  foreach (auto_xact_t * xact, auto_xacts)
+  foreach (auto_xact_t * xact, auto_xacts, auto_xacts_list) {
     if (! xact->has_flags(ITEM_TEMP))
       xact->clear_xdata();
+  } foreach_end ();
 
-  foreach (period_xact_t * xact, period_xacts)
+  foreach (period_xact_t * xact, period_xacts, period_xacts_list) {
     if (! xact->has_flags(ITEM_TEMP))
       xact->clear_xdata();
+  } foreach_end ();
 
   master->clear_xdata();
 }
@@ -238,11 +248,12 @@ bool journal_t::valid() const
     return false;
   }
 
-  foreach (const xact_t * xact, xacts)
+  foreach_const (const xact_t * xact, xacts, xacts_list) {
     if (! xact->valid()) {
       DEBUG("ledger.validate", "journal_t: xact not valid");
       return false;
     }
+  } foreach_end ();
 
   return true;
 }

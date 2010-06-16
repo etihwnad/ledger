@@ -117,7 +117,8 @@ lookup_probable_account(const string&   ident,
     char_positions_map positions;
 
     // Walk each letter in the source identifier
-    foreach (const uint32_t& ch, lowered_ident.utf32chars) {
+    foreach_const (const uint32_t& ch, lowered_ident.utf32chars,
+                   std::vector<boost::uint32_t>) {
       int         addend      = 0;
       bool        added_bonus = false;
       std::size_t value_len   = value_key.length();
@@ -224,7 +225,7 @@ lookup_probable_account(const string&   ident,
         bonus = 0;
 
       index++;
-    }
+    } foreach_end ();
 
     // Only consider payees with a score of 30 or greater
     if (score >= 30)
@@ -248,7 +249,7 @@ lookup_probable_account(const string&   ident,
           "Payee: " << std::setw(5) << std::right << (*si).second <<
           " - " << (*si).first->payee);
 
-    foreach (post_t * post, (*si).first->posts) {
+    foreach (post_t * post, (*si).first->posts, posts_list) {
       if (! post->has_flags(ITEM_TEMP | ITEM_GENERATED) &&
           post->account != ref_account &&
           ! post->account->has_flags(ACCOUNT_TEMP | ACCOUNT_GENERATED)) {
@@ -260,16 +261,16 @@ lookup_probable_account(const string&   ident,
           (*x).second += ((*si).second - decay);
       }
       decay++;
-    }
+    } foreach_end ();
   }
 
   if (account_usage.size() > 0) {
 #if defined(DEBUG_ON)
     if (SHOW_DEBUG("lookup.account")) {
-      foreach (const account_use_pair& value, account_usage) {
+      foreach (const account_use_pair& value, account_usage, account_use_map) {
         DEBUG("lookup.account",
               "Account: " << value.second << " - " << value.first->fullname());
-      }
+      } foreach_end ();
     }
 #endif
     return std::pair<xact_t *, account_t *>

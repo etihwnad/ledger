@@ -259,7 +259,8 @@ commodity_t::varied_history_t::find_price(const commodity_t&            source,
   price_point_t best;
   bool          found = false;
 
-  foreach (const history_by_commodity_map::value_type& hist, histories) {
+  foreach_const (const history_by_commodity_map::value_type& hist, histories,
+                 history_by_commodity_map) {
     commodity_t& comm(*hist.first);
     if (comm == source)
       continue;
@@ -326,7 +327,7 @@ commodity_t::varied_history_t::find_price(const commodity_t&            source,
       DEBUG_INDENT("commodity.prices.find", indent + 1);
       DEBUG("commodity.prices.find", "saw no price there");
     }
-  }
+  } foreach_end ();
 
   if (found) {
     DEBUG_INDENT("commodity.prices.find", indent);
@@ -542,9 +543,10 @@ namespace {
 
 bool commodity_t::symbol_needs_quotes(const string& symbol)
 {
-  foreach (char ch, symbol)
+  foreach_const (const char ch, symbol, string) {
     if (invalid_chars[static_cast<unsigned char>(ch)])
       return true;
+  } foreach_end ();
 
   return false;
 }
@@ -772,8 +774,9 @@ void to_xml(std::ostream& out, const commodity_t& comm,
     if (comm.varied_history()) {
       push_xml y(out, "varied-history");
 
-      foreach (const commodity_t::history_by_commodity_map::value_type& pair,
-               comm.varied_history()->histories) {
+      foreach_const (const commodity_t::history_by_commodity_map::value_type& pair,
+                     comm.varied_history()->histories,
+                     commodity_t::history_by_commodity_map) {
         {
           push_xml z(out, "symbol");
           out << y.guard(pair.first->symbol());
@@ -781,14 +784,15 @@ void to_xml(std::ostream& out, const commodity_t& comm,
         {
           push_xml z(out, "history");
 
-          foreach (const commodity_t::history_map::value_type& inner_pair,
-                   pair.second.prices) {
+          foreach_const (const commodity_t::history_map::value_type& inner_pair,
+                         pair.second.prices,
+                         commodity_t::history_map) {
             push_xml w(out, "price-point");
             to_xml(out, inner_pair.first);
             to_xml(out, inner_pair.second);
-          }
+          } foreach_end ();
         }
-      }
+      } foreach_end ();
     }
   }
 }

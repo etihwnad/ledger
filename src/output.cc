@@ -198,11 +198,11 @@ format_accounts::mark_accounts(account_t& account, const bool flat)
   std::size_t visited    = 0;
   std::size_t to_display = 0;
 
-  foreach (accounts_map::value_type& pair, account.accounts) {
+  foreach (accounts_map::value_type& pair, account.accounts, accounts_map) {
     std::pair<std::size_t, std::size_t> i = mark_accounts(*pair.second, flat);
     visited    += i.first;
     to_display += i.second;
-  }
+  } foreach_end ();
 
 #if defined(DEBUG_ON)
   DEBUG("account.display", "Considering account: " << account.fullname());
@@ -247,8 +247,9 @@ void format_accounts::flush()
 
   std::size_t displayed = 0;
 
-  foreach (account_t * account, posted_accounts)
+  foreach (account_t * account, posted_accounts, std::list<account_t *>) {
     displayed += post_account(*account, report.HANDLED(flat));
+  } foreach_end();
 
   if (displayed > 1 &&
       ! report.HANDLED(no_total) && ! report.HANDLED(percent)) {
@@ -277,16 +278,16 @@ void report_accounts::flush()
 {
   std::ostream& out(report.output_stream);
 
-  foreach (accounts_pair& entry, accounts) {
+  foreach (accounts_pair& entry, accounts, report_accounts_map) {
     if (report.HANDLED(count))
       out << entry.second << ' ';
     out << *entry.first << '\n';
-  }
+  } foreach_end ();
 }
 
 void report_accounts::operator()(post_t& post)
 {
-  std::map<account_t *, std::size_t>::iterator i = accounts.find(post.account);
+  report_accounts_map::iterator i = accounts.find(post.account);
   if (i == accounts.end())
     accounts.insert(accounts_pair(post.account, 1));
   else
@@ -297,16 +298,16 @@ void report_payees::flush()
 {
   std::ostream& out(report.output_stream);
 
-  foreach (payees_pair& entry, payees) {
+  foreach (payees_pair& entry, payees, report_payees_map) {
     if (report.HANDLED(count))
       out << entry.second << ' ';
     out << entry.first << '\n';
-  }
+  } foreach_end ();
 }
 
 void report_payees::operator()(post_t& post)
 {
-  std::map<string, std::size_t>::iterator i = payees.find(post.payee());
+  report_payees_map::iterator i = payees.find(post.payee());
   if (i == payees.end())
     payees.insert(payees_pair(post.payee(), 1));
   else
@@ -317,11 +318,11 @@ void report_commodities::flush()
 {
   std::ostream& out(report.output_stream);
 
-  foreach (commodities_pair& entry, commodities) {
+  foreach (commodities_pair& entry, commodities, report_commodities_map) {
     if (report.HANDLED(count))
       out << entry.second << ' ';
     out << *entry.first << '\n';
-  }
+  } foreach_end ();
 }
 
 void report_commodities::operator()(post_t& post)
@@ -329,7 +330,7 @@ void report_commodities::operator()(post_t& post)
   amount_t temp(post.amount.strip_annotations(report.what_to_keep()));
   commodity_t& comm(temp.commodity());
 
-  std::map<commodity_t *, std::size_t>::iterator i = commodities.find(&comm);
+  report_commodities_map::iterator i = commodities.find(&comm);
   if (i == commodities.end())
     commodities.insert(commodities_pair(&comm, 1));
   else
@@ -338,7 +339,7 @@ void report_commodities::operator()(post_t& post)
   if (comm.has_annotation()) {
     annotated_commodity_t& ann_comm(as_annotated_commodity(comm));
     if (ann_comm.details.price) {
-      std::map<commodity_t *, std::size_t>::iterator i =
+      report_commodities_map::iterator i =
         commodities.find(&ann_comm.details.price->commodity());
       if (i == commodities.end())
         commodities.insert

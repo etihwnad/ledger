@@ -397,8 +397,10 @@ void global_scope_t::normalize_session_options()
   INFO("Initialization file is " << HANDLER(init_file_).str());
   INFO("Price database is " << session().HANDLER(price_db_).str());
 
-  foreach (const path& pathname, session().HANDLER(file_).data_files)
+  foreach_const (const path& pathname, session().HANDLER(file_).data_files,
+                 std::list<path>) {
     INFO("Journal file is " << pathname.string());
+  } foreach_end ();
 #endif // defined(LOGGING_ON)
 }
 

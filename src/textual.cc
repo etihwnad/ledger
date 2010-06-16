@@ -81,9 +81,10 @@ namespace {
     }
 
     account_t * top_account() {
-      foreach (state_t& state, state_stack)
+      foreach (state_t& state, state_stack, std::list<state_t>) {
         if (state.type() == typeid(account_t *))
           return boost::get<account_t *>(state);
+      } foreach_end ();
       return NULL;
     }
   };
@@ -249,10 +250,11 @@ void instance_t::parse()
              instance = instance->parent)
           instances.push_front(instance);
 
-        foreach (instance_t * instance, instances)
+        foreach (instance_t * instance, instances, std::list<instance_t *>) {
           add_error_context(_("In file included from %1")
                             << file_context(instance->pathname,
                                             instance->linenum));
+        } foreach_end();
       }
       add_error_context(_("While parsing file %1")
                         << file_context(pathname, linenum));
@@ -1122,12 +1124,13 @@ post_t * instance_t::parse_post(char *          line,
   }
 
   if (post->account->name == _("Unknown")) {
-    foreach (account_mapping_t& value, context.journal.account_mappings) {
+    foreach (account_mapping_t& value, context.journal.account_mappings,
+             account_mappings_t) {
       if (value.first.match(xact->payee)) {
         post->account = value.second;
         break;
       }
-    }
+    } foreach_end();
   }
 
   // Parse the optional amount
@@ -1157,7 +1160,7 @@ post_t * instance_t::parse_post(char *          line,
       }
 
       if (! post->amount.has_annotation()) {
-        foreach (state_t& state, context.state_stack) {
+        foreach (state_t& state, context.state_stack, std::list<state_t>) {
           if (state.type() == typeid(fixed_rate_t)) {
             fixed_rate_t& rate(boost::get<fixed_rate_t>(state));
             if (*rate.first == post->amount.commodity()) {
@@ -1167,7 +1170,7 @@ post_t * instance_t::parse_post(char *          line,
               break;
             }
           }
-        }
+        } foreach_end();
       }
     }
 
@@ -1357,9 +1360,11 @@ post_t * instance_t::parse_post(char *          line,
   post->pos->end_line = linenum;
 
   if (! context.state_stack.empty()) {
-    foreach (const state_t& state, context.state_stack)
+    foreach_const (const state_t& state, context.state_stack,
+                   std::list<state_t>) {
       if (state.type() == typeid(string))
         post->parse_tags(boost::get<string>(state).c_str(), context.scope, true);
+    } foreach_end();
   }
 
   TRACE_STOP(post_details, 1);
@@ -1455,12 +1460,13 @@ xact_t * instance_t::parse_xact(char *          line,
 
   if (next && *next) {
     char * p = next_element(next, true);
-    foreach (payee_mapping_t& value, context.journal.payee_mappings) {
+    foreach (payee_mapping_t& value, context.journal.payee_mappings,
+             payee_mappings_t) {
       if (value.first.match(next)) {
         xact->payee = value.second;
         break;
       }
-    }
+    } foreach_end();
     if (xact->payee.empty())
       xact->payee = next;
     next = p;
@@ -1539,7 +1545,7 @@ xact_t * instance_t::parse_xact(char *          line,
   if (xact->_state == item_t::UNCLEARED) {
     item_t::state_t result = item_t::CLEARED;
 
-    foreach (post_t * post, xact->posts) {
+    foreach (post_t * post, xact->posts, posts_list) {
       if (post->_state == item_t::UNCLEARED) {
         result = item_t::UNCLEARED;
         break;
@@ -1547,17 +1553,19 @@ xact_t * instance_t::parse_xact(char *          line,
       else if (post->_state == item_t::PENDING) {
         result = item_t::PENDING;
       }
-    }
+    } foreach_end();
   }
 
   xact->pos->end_pos  = curr_pos;
   xact->pos->end_line = linenum;
 
   if (! context.state_stack.empty()) {
-    foreach (const state_t& state, context.state_stack)
+    foreach_const (const state_t& state, context.state_stack,
+                   std::list<state_t>) {
       if (state.type() == typeid(string))
         xact->parse_tags(boost::get<string>(state).c_str(), context.scope,
                          false);
+    } foreach_end();
   }
 
   TRACE_STOP(xact_details, 1);

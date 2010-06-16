@@ -184,8 +184,9 @@ namespace {
       coll->report.normalize_options("register");
 
       value_t args;
-      foreach (const string& arg, remaining)
+      foreach (const string& arg, remaining, strings_list) {
         args.push_back(string_value(arg));
+      } foreach_end ();
       coll->report.parse_query_args(args, "@Journal.collect");
 
       journal_posts_iterator walker(coll->journal);

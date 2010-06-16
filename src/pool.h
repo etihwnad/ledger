@@ -86,8 +86,9 @@ public:
 
   virtual ~commodity_pool_t() {
     TRACE_DTOR(commodity_pool_t);
-    foreach (commodities_map::value_type& pair, commodities)
+    foreach (commodities_map::value_type& pair, commodities, commodities_map) {
       checked_delete(pair.second);
+    } foreach_end ();
   }
 
   string make_qualified_name(const commodity_t&  comm,

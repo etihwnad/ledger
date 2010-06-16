@@ -247,11 +247,12 @@ namespace {
         return when;
     }
 
-    foreach (shared_ptr<date_io_t>& reader, readers) {
+    foreach (shared_ptr<date_io_t>& reader, readers,
+             std::deque<shared_ptr<date_io_t> >) {
       date_t when = parse_date_mask_routine(date_str, *reader.get(), traits);
       if (! when.is_not_a_date())
         return when;
-    }
+    } foreach_end();
 
     throw_(date_error, _("Invalid date: %1") << date_str);
     return date_t();
@@ -1805,12 +1806,15 @@ void times_shutdown()
 
     readers.clear();
 
-    foreach (datetime_io_map::value_type& pair, temp_datetime_io)
+    foreach (datetime_io_map::value_type& pair, temp_datetime_io,
+             datetime_io_map) {
       checked_delete(pair.second);
+    } foreach_end();
     temp_datetime_io.clear();
 
-    foreach (date_io_map::value_type& pair, temp_date_io)
+    foreach (date_io_map::value_type& pair, temp_date_io, date_io_map) {
       checked_delete(pair.second);
+    } foreach_end();
     temp_date_io.clear();
 
     is_initialized = false;

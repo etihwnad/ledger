@@ -117,13 +117,13 @@ account_t& temporaries_t::create_account(const string& name,
 void temporaries_t::clear()
 {
   if (post_temps) {
-    foreach (post_t& post, *post_temps) {
+    foreach (post_t& post, *post_temps, std::list<post_t>) {
       if (! post.xact->has_flags(ITEM_TEMP))
         post.xact->remove_post(&post);
 
       if (post.account && ! post.account->has_flags(ACCOUNT_TEMP))
         post.account->remove_post(&post);
-    }
+    } foreach_end ();
     post_temps->clear();
   }
 
@@ -131,10 +131,10 @@ void temporaries_t::clear()
     xact_temps->clear();
 
   if (acct_temps) {
-    foreach (account_t& acct, *acct_temps) {
+    foreach (account_t& acct, *acct_temps, std::list<account_t>) {
       if (acct.parent && ! acct.parent->has_flags(ACCOUNT_TEMP))
         acct.parent->remove_account(&acct);
-    }
+    } foreach_end ();
     acct_temps->clear();
   }
 }

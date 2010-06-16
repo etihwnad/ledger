@@ -117,8 +117,10 @@ bool archive_t::read_header()
   DEBUG("archive.journal", "Number of sources: " << sources.size());
 
 #if defined(DEBUG_ON)
-  foreach (const journal_t::fileinfo_t& i, sources)
+  foreach_const (const journal_t::fileinfo_t& i, sources,
+                 std::list<fileinfo_t>) {
     DEBUG("archive.journal", "Loaded source: " << *i.filename);
+  } foreach_end ();
 #endif
 
   return true;
@@ -156,7 +158,7 @@ bool archive_t::should_load(const std::list<path>& data_files)
     return false;
   }
 
-  foreach (const path& p, data_files) {
+  foreach_const (const path& p, data_files, std::list<path>) {
     DEBUG("archive.journal", "Scanning for data file: " << p);
 
     if (! exists(p)) {
@@ -164,7 +166,8 @@ bool archive_t::should_load(const std::list<path>& data_files)
       return false;
     }
 
-    foreach (const journal_t::fileinfo_t& i, sources) {
+    foreach_const (const journal_t::fileinfo_t& i, sources,
+                   std::list<fileinfo_t>) {
       assert(! i.from_stream);
       assert(i.filename);
 
@@ -189,8 +192,8 @@ bool archive_t::should_load(const std::list<path>& data_files)
 
         found++;
       }
-    }
-  }
+    } foreach_end ();
+  } foreach_end ();
 
   if (found != data_files.size()) {
     DEBUG("archive.journal", "No, not every source's name matched");
@@ -217,7 +220,8 @@ bool archive_t::should_save(journal_t& journal)
     return false;
   }
 
-  foreach (const journal_t::fileinfo_t& i, journal.sources) {
+  foreach_const (const journal_t::fileinfo_t& i, journal.sources,
+                 std::list<fileinfo_t>) {
     if (i.from_stream) {
       DEBUG("archive.journal", "No, one source was from a stream");
       return false;
@@ -230,7 +234,7 @@ bool archive_t::should_save(journal_t& journal)
     }
 
     data_files.push_back(*i.filename);
-  }
+  } foreach_end ();
 
   if (should_load(data_files)) {
     DEBUG("archive.journal", "No, because it's still loadable");
@@ -251,8 +255,10 @@ void archive_t::save(journal_t& journal)
   sources = journal.sources;
 
 #if defined(DEBUG_ON)
-  foreach (const journal_t::fileinfo_t& i, sources)
+  foreach_const (const journal_t::fileinfo_t& i, sources,
+                 std::list<fileinfo_t>) {
     DEBUG("archive.journal", "Saving source: " << *i.filename);
+  } foreach_end ();
 #endif
 
   boost::archive::binary_oarchive oa(stream);

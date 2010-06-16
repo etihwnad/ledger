@@ -147,8 +147,10 @@ std::size_t current_memory_size()
 {
   std::size_t memory_size = 0;
 
-  foreach (const object_count_map::value_type& pair, *live_memory_count)
+  foreach_const (const object_count_map::value_type& pair, *live_memory_count,
+                 object_count_map) {
     memory_size += pair.second.second;
+  } foreach_end ();
 
   return memory_size;
 }
@@ -272,19 +274,22 @@ namespace ledger {
 
 inline void report_count_map(std::ostream& out, object_count_map& the_map)
 {
-  foreach (object_count_map::value_type& pair, the_map)
+  foreach (object_count_map::value_type& pair, the_map, object_count_map) {
     out << "  " << std::right << std::setw(12) << pair.second.first
         << "  " << std::right << std::setw(7) << pair.second.second
         << "  " << std::left  << pair.first
         << std::endl;
+  } foreach_end();
 }
 
 std::size_t current_objects_size()
 {
   std::size_t objects_size = 0;
 
-  foreach (const object_count_map::value_type& pair, *live_object_count)
+  foreach_const (const object_count_map::value_type& pair, *live_object_count,
+                 object_count_map) {
     objects_size += pair.second.second;
+  } foreach_end();
 
   return objects_size;
 }
@@ -366,11 +371,13 @@ void report_memory(std::ostream& out, bool report_all)
   if (live_memory->size() > 0) {
     out << "Live memory:" << std::endl;
 
-    foreach (const memory_map::value_type& pair, *live_memory)
+    foreach_const (const memory_map::value_type& pair, *live_memory,
+                   memory_map) {
       out << "  " << std::right << std::setw(12) << pair.first
           << "  " << std::right << std::setw(7) << pair.second.second
           << "  " << std::left  << pair.second.first
           << std::endl;
+    } foreach_end();
   }
 
   if (report_all && total_memory_count->size() > 0) {
@@ -386,11 +393,12 @@ void report_memory(std::ostream& out, bool report_all)
   if (live_objects->size() > 0) {
     out << "Live objects:" << std::endl;
 
-    foreach (const objects_map::value_type& pair, *live_objects)
+    foreach (const objects_map::value_type& pair, *live_objects, objects_map) {
       out << "  " << std::right << std::setw(12) << pair.first
           << "  " << std::right << std::setw(7) << pair.second.second
           << "  " << std::left  << pair.second.first
           << std::endl;
+    } foreach_end();
   }
 
   if (report_all) {

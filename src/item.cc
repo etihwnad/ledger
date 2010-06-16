@@ -60,14 +60,14 @@ bool item_t::has_tag(const mask_t& tag_mask,
                      const optional<mask_t>& value_mask, bool) const
 {
   if (metadata) {
-    foreach (const string_map::value_type& data, *metadata) {
+    foreach_const (const string_map::value_type& data, *metadata, string_map) {
       if (tag_mask.match(data.first)) {
         if (! value_mask)
           return true;
         else if (data.second.first)
           return value_mask->match(data.second.first->to_string());
       }
-    }
+    } foreach_end ();
   }
   return false;
 }
@@ -91,14 +91,15 @@ optional<value_t> item_t::get_tag(const mask_t& tag_mask,
                                   bool) const
 {
   if (metadata) {
-    foreach (const string_map::value_type& data, *metadata) {
+    foreach_const (const string_map::value_type& data, *metadata,
+                   string_map) {
       if (tag_mask.match(data.first) &&
           (! value_mask ||
            (data.second.first &&
             value_mask->match(data.second.first->to_string())))) {
         return data.second.first;
       }
-    }
+    } foreach_end ();
   }
   return none;
 }

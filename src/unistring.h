@@ -101,11 +101,12 @@ public:
 
   std::size_t find(const boost::uint32_t __s, std::size_t __pos = 0) const {
     std::size_t idx = 0;
-    foreach (const boost::uint32_t& ch, utf32chars) {
+    foreach_const (const boost::uint32_t& ch, utf32chars,
+                   std::vector<boost::uint32_t>) {
       if (idx >= __pos && ch == __s)
         return idx;
       idx++;
-    }
+    } foreach_end ();
     return npos;
   }
 

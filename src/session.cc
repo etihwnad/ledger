@@ -113,7 +113,8 @@ std::size_t session_t::read_data(const string& master_account)
       }
     }
 
-    foreach (const path& pathname, HANDLER(file_).data_files) {
+    foreach_const (const path& pathname, HANDLER(file_).data_files,
+                   std::list<path>) {
       if (pathname == "-") {
         // To avoid problems with stdin and pipes, etc., we read the entire
         // file in beforehand into a memory buffer, and then parcel it out
@@ -135,7 +136,7 @@ std::size_t session_t::read_data(const string& master_account)
       } else {
         xact_count += journal->read(pathname, acct);
       }
-    }
+    } foreach_end ();
 
     assert(xact_count == journal->xacts.size());
 

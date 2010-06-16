@@ -106,7 +106,8 @@ namespace {
     out << '\n';
 
     if (xact.metadata) {
-      foreach (const item_t::string_map::value_type& data, *xact.metadata) {
+      foreach_const (const item_t::string_map::value_type& data, *xact.metadata,
+                     item_t::string_map) {
         if (! data.second.second) {
           out << "    ; ";
           if (data.second.first)
@@ -115,10 +116,10 @@ namespace {
             out << ':' << data.first << ":";
           out << '\n';
         }
-      }
+      } foreach_end ();
     }
 
-    foreach (post_t * post, xact.posts) {
+    foreach (post_t * post, xact.posts, posts_list) {
       if (! report.HANDLED(generated) &&
           (post->has_flags(ITEM_TEMP | ITEM_GENERATED) &&
            ! post->has_flags(POST_ANONYMIZED)))
@@ -214,7 +215,7 @@ namespace {
       if (post->note)
         print_note(out, *post->note, columns, 4 + account_width);
       out << '\n';
-    }
+    } foreach_end ();
   }
 }
 
@@ -233,7 +234,7 @@ void print_xacts::flush()
   std::ostream& out(report.output_stream);
 
   bool first = true;
-  foreach (xact_t * xact, xacts) {
+  foreach (xact_t * xact, xacts, xacts_list) {
     if (first)
       first = false;
     else
@@ -245,7 +246,7 @@ void print_xacts::flush()
     } else {
       print_xact(report, out, *xact);
     }
-  }
+  } foreach_end ();
 
   out.flush();
 }

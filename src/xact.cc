@@ -50,12 +50,12 @@ xact_base_t::~xact_base_t()
   TRACE_DTOR(xact_base_t);
 
   if (! has_flags(ITEM_TEMP)) {
-    foreach (post_t * post, posts) {
+    foreach (post_t * post, posts, posts_list) {
       // If the posting is a temporary, it will be destructed when the
       // temporary is.
       assert(! post->has_flags(ITEM_TEMP));
       checked_delete(post);
-    }
+    } foreach_end ();
   }
 }
 
@@ -80,31 +80,33 @@ bool xact_base_t::remove_post(post_t * post)
 
 bool xact_base_t::has_xdata()
 {
-  foreach (post_t * post, posts)
+  foreach (post_t * post, posts, posts_list) {
     if (post->has_xdata())
       return true;
+  } foreach_end ();
 
   return false;
 }
 
 void xact_base_t::clear_xdata()
 {
-  foreach (post_t * post, posts)
+  foreach (post_t * post, posts, posts_list) {
     if (! post->has_flags(ITEM_TEMP))
       post->clear_xdata();
+  } foreach_end ();
 }
 
 value_t xact_base_t::magnitude() const
 {
   value_t halfbal = 0L;
-  foreach (const post_t * post, posts) {
+  foreach_const (const post_t * post, posts, posts_list) {
     if (post->amount.sign() > 0) {
       if (post->cost)
         halfbal += *post->cost;
       else
         halfbal += post->amount;
     }
-  }
+  } foreach_end ();
   return halfbal;
 }
 
@@ -117,7 +119,7 @@ bool xact_base_t::finalize()
   value_t  balance;
   post_t * null_post = NULL;
 
-  foreach (post_t * post, posts) {
+  foreach (post_t * post, posts, posts_list) {
     if (! post->must_balance())
       continue;
 
@@ -139,7 +141,7 @@ bool xact_base_t::finalize()
     else {
       null_post = post;
     }
-  }
+  } foreach_end ();
   VERIFY(balance.valid());
 
 #if defined(DEBUG_ON)
@@ -172,7 +174,7 @@ bool xact_base_t::finalize()
     bool     saw_cost = false;
     post_t * top_post = NULL;
 
-    foreach (post_t * post, posts) {
+    foreach (post_t * post, posts, posts_list) {
       if (! post->amount.is_null() && post->must_balance()) {
         if (post->amount.has_annotation())
           top_post = post;
@@ -184,7 +186,7 @@ bool xact_base_t::finalize()
         saw_cost = true;
         break;
       }
-    }
+    } foreach_end ();
 
     if (! saw_cost && top_post) {
       const balance_t& bal(balance.as_balance());
@@ -211,7 +213,7 @@ bool xact_base_t::finalize()
         amount_t         total_cost;
         const amount_t * prev_y = y;
 
-        foreach (post_t * post, posts) {
+        foreach (post_t * post, posts, posts_list) {
           if (post != top_post && post->must_balance() &&
               ! post->amount.is_null() &&
               post->amount.has_annotation() &&
@@ -232,12 +234,12 @@ bool xact_base_t::finalize()
             }
             DEBUG("xact.finalize", "total_cost = " << total_cost);
           }
-        }
+        } foreach_end();
         per_unit_cost = (*y / *x).abs().unrounded();
 
         DEBUG("xact.finalize", "per_unit_cost = " << per_unit_cost);
 
-        foreach (post_t * post, posts) {
+        foreach (post_t * post, posts, posts_list) {
           const amount_t& amt(post->amount);
 
           if (post->must_balance() && amt.commodity() == comm) {
@@ -248,7 +250,7 @@ bool xact_base_t::finalize()
 
             DEBUG("xact.finalize", "set post->cost to = " << *post->cost);
           }
-        }
+        } foreach_end ();
       }
     }
   }
@@ -256,7 +258,7 @@ bool xact_base_t::finalize()
   posts_list copy(posts);
 
   if (has_date()) {
-    foreach (post_t * post, copy) {
+    foreach (post_t * post, copy, posts_list) {
       if (! post->cost)
         continue;
 
@@ -315,7 +317,7 @@ bool xact_base_t::finalize()
         post->amount.annotation().add_flags(ANNOTATION_PRICE_FIXATED);
       }
     }
-  }
+  } foreach_end ();
 
   if (null_post != NULL) {
     // If one post has no value at all, its value will become the inverse of
@@ -327,7 +329,8 @@ bool xact_base_t::finalize()
     if (balance.is_balance()) {
       bool first = true;
       const balance_t& bal(balance.as_balance());
-      foreach (const balance_t::amounts_map::value_type& pair, bal.amounts) {
+      foreach_const (const balance_t::amounts_map::value_type& pair,
+                     bal.amounts, balance_t::amounts_map) {
         if (first) {
           null_post->amount = pair.second.negated();
           null_post->add_flags(POST_CALCULATED);
@@ -338,7 +341,7 @@ bool xact_base_t::finalize()
           p->set_state(null_post->state());
           add_post(p);
         }
-      }
+      } foreach_end ();
     }
     else if (balance.is_amount()) {
       null_post->amount = balance.as_amount().negated();
@@ -371,7 +374,7 @@ bool xact_base_t::finalize()
     bool all_null  = true;
     bool some_null = false;
 
-    foreach (post_t * post, posts) {
+    foreach (post_t * post, posts, posts_list) {
       if (! post->amount.is_null()) {
         all_null = false;
         post->amount.in_place_reduce();
@@ -383,7 +386,7 @@ bool xact_base_t::finalize()
 
       post->xdata().add_flags(POST_EXT_VISITED);
       post->account->xdata().add_flags(ACCOUNT_EXT_VISITED);
-    }
+    } foreach_end();
 
     if (all_null)
       return false;             // ignore this xact completely
@@ -403,7 +406,7 @@ bool xact_base_t::verify()
 
   value_t  balance;
 
-  foreach (post_t * post, posts) {
+  foreach (post_t * post, posts, posts_list) {
     if (! post->must_balance())
       continue;
 
@@ -416,21 +419,21 @@ bool xact_base_t::verify()
     // flag in a temporary to avoid it propagating into the balance.
     add_or_set_value(balance, p.keep_precision() ?
                      p.rounded().reduced() : p.reduced());
-  }
+  } foreach_end ();
   VERIFY(balance.valid());
 
   // Now that the post list has its final form, calculate the balance once
   // more in terms of total cost, accounting for any possible gain/loss
   // amounts.
 
-  foreach (post_t * post, posts) {
+  foreach (post_t * post, posts, posts_list) {
     if (! post->cost)
       continue;
 
     if (post->amount.commodity() == post->cost->commodity())
       throw_(amount_error,
              _("A posting's cost must be of a different commodity than its amount"));
-  }
+  } foreach_end();
 
   if (! balance.is_null() && ! balance.is_zero()) {
     add_error_context(item_context(*this, _("While balancing transaction")));
@@ -504,11 +507,11 @@ namespace {
     post_t& post(args.context<post_t>());
     expr_t::ptr_op_t expr(args.get<expr_t::ptr_op_t>(0));
 
-    foreach (post_t * p, post.xact->posts) {
+    foreach (post_t * p, post.xact->posts, posts_list) {
       bind_scope_t bound_scope(args, *p);
       if (expr->calc(bound_scope, args.locus, args.depth).to_boolean())
         return true;
-    }
+    } foreach_end ();
     return false;
   }
 
@@ -517,11 +520,11 @@ namespace {
     post_t& post(args.context<post_t>());
     expr_t::ptr_op_t expr(args.get<expr_t::ptr_op_t>(0));
 
-    foreach (post_t * p, post.xact->posts) {
+    foreach (post_t * p, post.xact->posts, posts_list) {
       bind_scope_t bound_scope(args, *p);
       if (! expr->calc(bound_scope, args.locus, args.depth).to_boolean())
         return false;
-    }
+    } foreach_end ();
     return true;
   }
 }
@@ -573,11 +576,12 @@ bool xact_t::valid() const
     return false;
   }
 
-  foreach (post_t * post, posts)
+  foreach_const (const post_t * post, posts, posts_list) {
     if (post->xact != this || ! post->valid()) {
       DEBUG("ledger.validate", "xact_t: post not valid");
       return false;
     }
+  } foreach_end ();
 
   return true;
 }
@@ -634,7 +638,7 @@ void auto_xact_t::extend_xact(xact_base_t& xact)
 
   bool needs_further_verification = false;
 
-  foreach (post_t * initial_post, initial_posts) {
+  foreach (post_t * initial_post, initial_posts, posts_list) {
     if (initial_post->has_flags(ITEM_GENERATED))
       continue;
 
@@ -674,14 +678,15 @@ void auto_xact_t::extend_xact(xact_base_t& xact)
       bind_scope_t bound_scope(*scope_t::default_scope, *initial_post);
 
       if (deferred_notes) {
-        foreach (deferred_tag_data_t& data, *deferred_notes) {
+        foreach (deferred_tag_data_t& data, *deferred_notes,
+                 deferred_notes_list) {
           if (data.apply_to_post == NULL)
             initial_post->parse_tags(data.tag_data.c_str(), bound_scope,
                                      data.overwrite_existing);
-        }
+        } foreach_end ();
       }
       if (check_exprs) {
-        foreach (check_expr_pair& pair, *check_exprs) {
+        foreach (check_expr_pair& pair, *check_exprs, check_expr_list) {
           if (pair.second == auto_xact_t::EXPR_GENERAL) {
             pair.first.calc(bound_scope);
           }
@@ -693,10 +698,10 @@ void auto_xact_t::extend_xact(xact_base_t& xact)
               warning_(_("Transaction check failed: %1") << pair.first);
             }
           }
-        }
+        } foreach_end ();
       }
 
-      foreach (post_t * post, posts) {
+      foreach (post_t * post, posts, posts_list) {
         amount_t post_amount;
         if (post->amount.is_null()) {
           if (! post->amount_expr)
@@ -770,15 +775,16 @@ void auto_xact_t::extend_xact(xact_base_t& xact)
           needs_further_verification = true;
 
         if (deferred_notes) {
-          foreach (deferred_tag_data_t& data, *deferred_notes) {
+          foreach (deferred_tag_data_t& data, *deferred_notes,
+                   deferred_notes_list) {
             if (data.apply_to_post == post)
               new_post->parse_tags(data.tag_data.c_str(), bound_scope,
                                    data.overwrite_existing);
-          }
+          } foreach_end();
         }
-      }
+      } foreach_end ();
     }
-  }
+  } foreach_end ();
 
   if (needs_further_verification)
     xact.verify();
@@ -831,7 +837,8 @@ void to_xml(std::ostream& out, const xact_t& xact)
 
   if (xact.metadata) {
     push_xml y(out, "metadata");
-    foreach (const item_t::string_map::value_type& pair, *xact.metadata) {
+    foreach_const (const item_t::string_map::value_type& pair, *xact.metadata,
+                   item_t::string_map) {
       if (pair.second.first) {
         push_xml z(out, "variable");
         {
@@ -846,7 +853,7 @@ void to_xml(std::ostream& out, const xact_t& xact)
         push_xml z(out, "tag");
         out << y.guard(pair.first);
       }
-    }
+    } foreach_end ();
   }
 }
 

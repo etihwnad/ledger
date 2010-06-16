@@ -41,12 +41,12 @@ account_t::~account_t()
 {
   TRACE_DTOR(account_t);
 
-  foreach (accounts_map::value_type& pair, accounts) {
+  foreach (accounts_map::value_type& pair, accounts, accounts_map) {
     if (! pair.second->has_flags(ACCOUNT_TEMP) ||
         has_flags(ACCOUNT_TEMP)) {
       checked_delete(pair.second);
     }      
-  }
+  } foreach_end ();
 }
 
 account_t * account_t::find_account(const string& name,
@@ -108,9 +108,10 @@ namespace {
     if (regexp.match(account->fullname()))
       return account;
 
-    foreach (accounts_map::value_type& pair, account->accounts)
+    foreach (accounts_map::value_type& pair, account->accounts, accounts_map) {
       if (account_t * a = find_account_re_(pair.second, regexp))
         return a;
+    } foreach_end ();
 
     return NULL;
   }
@@ -293,11 +294,11 @@ namespace {
     account_t& account(args.context<account_t>());
     expr_t::ptr_op_t expr(args.get<expr_t::ptr_op_t>(0));
 
-    foreach (post_t * p, account.posts) {
+    foreach (post_t * p, account.posts, posts_list) {
       bind_scope_t bound_scope(args, *p);
       if (expr->calc(bound_scope, args.locus, args.depth).to_boolean())
         return true;
-    }
+    } foreach_end ();
     return false;
   }
 
@@ -306,11 +307,11 @@ namespace {
     account_t& account(args.context<account_t>());
     expr_t::ptr_op_t expr(args.get<expr_t::ptr_op_t>(0));
 
-    foreach (post_t * p, account.posts) {
+    foreach (post_t * p, account.posts, posts_list) {
       bind_scope_t bound_scope(args, *p);
       if (! expr->calc(bound_scope, args.locus, args.depth).to_boolean())
         return false;
-    }
+    } foreach_end ();
     return true;
   }
 }
@@ -413,7 +414,7 @@ bool account_t::valid() const
     return false;
   }
 
-  foreach (const accounts_map::value_type& pair, accounts) {
+  foreach_const (const accounts_map::value_type& pair, accounts, accounts_map) {
     if (this == pair.second) {
       DEBUG("ledger.validate", "account_t: parent refers to itself!");
       return false;
@@ -423,17 +424,18 @@ bool account_t::valid() const
       DEBUG("ledger.validate", "account_t: child not valid");
       return false;
     }
-  }
+  } foreach_end ();
 
   return true;
 }
 
 bool account_t::children_with_xdata() const
 {
-  foreach (const accounts_map::value_type& pair, accounts)
+  foreach_const (const accounts_map::value_type& pair, accounts, accounts_map) {
     if (pair.second->has_xdata() ||
         pair.second->children_with_xdata())
       return true;
+  } foreach_end ();
 
   return false;
 }
@@ -443,10 +445,11 @@ std::size_t account_t::children_with_flags(xdata_t::flags_t flags) const
   std::size_t count = 0;
   bool        grandchildren_visited = false;
 
-  foreach (const accounts_map::value_type& pair, accounts)
+  foreach_const (const accounts_map::value_type& pair, accounts, accounts_map) {
     if (pair.second->has_xflags(flags) ||
         pair.second->children_with_flags(flags))
       count++;
+  } foreach_end();
 
   // Although no immediately children were visited, if any progeny at all were
   // visited, it counts as one.
@@ -496,9 +499,10 @@ void account_t::clear_xdata()
 {
   xdata_ = none;
 
-  foreach (accounts_map::value_type& pair, accounts)
+  foreach (accounts_map::value_type& pair, accounts, accounts_map) {
     if (! pair.second->has_flags(ACCOUNT_TEMP))
       pair.second->clear_xdata();
+  } foreach_end();
 }
 
 value_t account_t::amount(const optional<expr_t&>& expr) const
@@ -547,11 +551,12 @@ value_t account_t::total(const optional<expr_t&>& expr) const
     const_cast<account_t&>(*this).xdata().family_details.calculated = true;
 
     value_t temp;
-    foreach (const accounts_map::value_type& pair, accounts) {
+    foreach_const (const accounts_map::value_type& pair, accounts,
+                   accounts_map) {
       temp = pair.second->total(expr);
       if (! temp.is_null())
         add_or_set_value(xdata_->family_details.total, temp);
-    }
+    } foreach_end();
 
     temp = amount(expr);
     if (! temp.is_null())
@@ -566,8 +571,9 @@ account_t::self_details(bool gather_all) const
   if (! (xdata_ && xdata_->self_details.gathered)) {
     const_cast<account_t&>(*this).xdata().self_details.gathered = true;
 
-    foreach (const post_t * post, posts)
+    foreach_const (const post_t * post, posts, posts_list) {
       xdata_->self_details.update(const_cast<post_t&>(*post), gather_all);
+    } foreach_end();
   }
   return xdata_->self_details;
 }
@@ -578,8 +584,10 @@ account_t::family_details(bool gather_all) const
   if (! (xdata_ && xdata_->family_details.gathered)) {
     const_cast<account_t&>(*this).xdata().family_details.gathered = true;
 
-    foreach (const accounts_map::value_type& pair, accounts)
+    foreach_const (const accounts_map::value_type& pair, accounts,
+                   accounts_map) {
       xdata_->family_details += pair.second->family_details(gather_all);
+    } foreach_end();
 
     xdata_->family_details += self_details(gather_all);
   }

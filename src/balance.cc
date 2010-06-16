@@ -62,8 +62,10 @@ balance_t::balance_t(const long val)
 
 balance_t& balance_t::operator+=(const balance_t& bal)
 {
-  foreach (const amounts_map::value_type& pair, bal.amounts)
+  foreach_const (const amounts_map::value_type& pair, bal.amounts,
+                 amounts_map) {
     *this += pair.second;
+  } foreach_end ();
   return *this;
 }
 
@@ -87,8 +89,10 @@ balance_t& balance_t::operator+=(const amount_t& amt)
 
 balance_t& balance_t::operator-=(const balance_t& bal)
 {
-  foreach (const amounts_map::value_type& pair, bal.amounts)
+  foreach_const (const amounts_map::value_type& pair, bal.amounts,
+                 amounts_map) {
     *this -= pair.second;
+  } foreach_end ();
   return *this;
 }
 
@@ -127,8 +131,9 @@ balance_t& balance_t::operator*=(const amount_t& amt)
   else if (! amt.commodity()) {
     // Multiplying by an amount with no commodity causes all the
     // component amounts to be increased by the same factor.
-    foreach (amounts_map::value_type& pair, amounts)
+    foreach (amounts_map::value_type& pair, amounts, amounts_map) {
       pair.second *= amt;
+    } foreach_end ();
   }
   else if (amounts.size() == 1) {
     // Multiplying by a commoditized amount is only valid if the sole
@@ -163,8 +168,9 @@ balance_t& balance_t::operator/=(const amount_t& amt)
   else if (! amt.commodity()) {
     // Dividing by an amount with no commodity causes all the
     // component amounts to be divided by the same factor.
-    foreach (amounts_map::value_type& pair, amounts)
+    foreach (amounts_map::value_type& pair, amounts, amounts_map) {
       pair.second /= amt;
+    } foreach_end ();
   }
   else if (amounts.size() == 1) {
     // Dividing by a commoditized amount is only valid if the sole
@@ -191,14 +197,15 @@ balance_t::value(const optional<datetime_t>&   moment,
   balance_t temp;
   bool      resolved = false;
 
-  foreach (const amounts_map::value_type& pair, amounts) {
+  foreach_const (const amounts_map::value_type& pair, amounts, amounts_map) {
     if (optional<amount_t> val = pair.second.value(moment, in_terms_of)) {
       temp += *val;
       resolved = true;
     } else {
       temp += pair.second;
     }
-  }
+  } foreach_end ();
+  
   return resolved ? temp : optional<balance_t>();
 }
 
@@ -206,8 +213,9 @@ balance_t balance_t::price() const
 {
   balance_t temp;
 
-  foreach (const amounts_map::value_type& pair, amounts)
+  foreach_const (const amounts_map::value_type& pair, amounts, amounts_map) {
     temp += pair.second.price();
+  } foreach_end ();
 
   return temp;
 }
@@ -244,8 +252,9 @@ balance_t::strip_annotations(const keep_details_t& what_to_keep) const
 {
   balance_t temp;
 
-  foreach (const amounts_map::value_type& pair, amounts)
+  foreach_const (const amounts_map::value_type& pair, amounts, amounts_map) {
     temp += pair.second.strip_annotations(what_to_keep);
+  } foreach_end ();
 
   return temp;
 }
@@ -264,14 +273,15 @@ void balance_t::print(std::ostream&       out,
   typedef std::vector<const amount_t *> amounts_array;
   amounts_array sorted;
 
-  foreach (const amounts_map::value_type& pair, amounts)
+  foreach_const (const amounts_map::value_type& pair, amounts, amounts_map) {
     if (pair.second)
       sorted.push_back(&pair.second);
+  } foreach_end ();
 
   std::stable_sort(sorted.begin(), sorted.end(),
                    commodity_t::compare_by_commodity());
 
-  foreach (const amount_t * amount, sorted) {
+  foreach_const (const amount_t * amount, sorted, amounts_array) {
     int width;
     if (! first) {
       out << std::endl;
@@ -285,7 +295,7 @@ void balance_t::print(std::ostream&       out,
     amount->print(buf, flags);
     justify(out, buf.str(), width, flags & AMOUNT_PRINT_RIGHT_JUSTIFY,
             flags & AMOUNT_PRINT_COLORIZE && amount->sign() < 0);
-  }
+  } foreach_end ();
 
   if (first) {
     out.width(first_width);
@@ -301,8 +311,10 @@ void to_xml(std::ostream& out, const balance_t& bal)
 {
   push_xml x(out, "balance");
 
-  foreach (const balance_t::amounts_map::value_type& pair, bal.amounts)
+  foreach_const (const balance_t::amounts_map::value_type& pair, bal.amounts,
+                 balance_t::amounts_map) {
     to_xml(out, pair.second);
+  } foreach_end();
 }
 
 } // namespace ledger

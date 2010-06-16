@@ -456,11 +456,14 @@ value_t python_interpreter_t::functor_t::operator()(call_scope_t& args)
       list arglist;
       // jww (2009-11-05): What about a single argument which is a sequence,
       // rather than a sequence of arguments?
-      if (args.value().is_sequence())
-        foreach (const value_t& value, args.value().as_sequence())
+      if (args.value().is_sequence()) {
+        foreach_const (const value_t& value, args.value().as_sequence(),
+                       value_t::sequence_t) {
           append_value(arglist, value);
-      else
+        } foreach_end ();
+      } else {
         append_value(arglist, args.value());
+      }
 
       if (PyObject * val =
           PyObject_CallObject(func.ptr(), python::tuple(arglist).ptr())) {

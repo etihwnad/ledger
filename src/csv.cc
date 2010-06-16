@@ -193,14 +193,15 @@ xact_t * csv_reader::read_xact(journal_t& journal, account_t * bucket)
 
     case FIELD_PAYEE: {
       bool found = false;
-      foreach (payee_mapping_t& value, journal.payee_mappings) {
+      foreach (payee_mapping_t& value, journal.payee_mappings,
+               payee_mappings_t) {
         DEBUG("csv.mappings", "Looking for payee mapping: " << value.first);
         if (value.first.match(field)) {
           xact->payee = value.second;
           found = true;
           break;
         }
-      }
+      } foreach_end ();
       if (! found)
         xact->payee = field;
       break;
@@ -252,12 +253,13 @@ xact_t * csv_reader::read_xact(journal_t& journal, account_t * bucket)
 
   // Translate the account name, if we have enough information to do so
 
-  foreach (account_mapping_t& value, journal.account_mappings) {
+  foreach (account_mapping_t& value, journal.account_mappings,
+           account_mappings_t) {
     if (value.first.match(xact->payee)) {
       post->account = value.second;
       break;
     }
-  }
+  } foreach_end();
 
   xact->add_post(post.release());
 

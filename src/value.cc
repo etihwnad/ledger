@@ -108,10 +108,10 @@ value_t::operator bool() const
   }
   case SEQUENCE:
     if (! as_sequence().empty()) {
-      foreach (const value_t& value, as_sequence()) {
+      foreach_const (const value_t& value, as_sequence(), sequence_t) {
         if (value)
           return true;
-      }
+      } foreach_end ();
     }
     return false;
   case SCOPE:
@@ -300,8 +300,9 @@ value_t value_t::number() const
   case SEQUENCE:
     if (! as_sequence().empty()) {
       value_t temp;
-      foreach (const value_t& value, as_sequence())
+      foreach_const (const value_t& value, as_sequence(), sequence_t) {
         temp += value.number();
+      } foreach_end ();
       return temp;
     }
     break;
@@ -902,12 +903,12 @@ bool value_t::is_less_than(const value_t& val) const
     case INTEGER:
     case AMOUNT: {
       bool no_amounts = true;
-      foreach (const balance_t::amounts_map::value_type& pair,
-               as_balance().amounts) {
+      foreach_const (const balance_t::amounts_map::value_type& pair,
+                     as_balance().amounts, balance_t::amounts_map) {
         if (pair.second >= val)
           return false;
         no_amounts = false;
-      }
+      } foreach_end ();
       return ! no_amounts;
     }
     default:
@@ -925,11 +926,11 @@ bool value_t::is_less_than(const value_t& val) const
     case INTEGER:
     case AMOUNT: {
       bool no_amounts = true;
-      foreach (const value_t& value, as_sequence()) {
+      foreach_const (const value_t& value, as_sequence(), sequence_t) {
         if (value >= val)
           return false;
         no_amounts = false;
-      }
+      } foreach_end ();
       return ! no_amounts;
     }
     case SEQUENCE: {
@@ -1018,12 +1019,12 @@ bool value_t::is_greater_than(const value_t& val) const
     case INTEGER:
     case AMOUNT: {
       bool no_amounts = true;
-      foreach (const balance_t::amounts_map::value_type& pair,
-               as_balance().amounts) {
+      foreach_const (const balance_t::amounts_map::value_type& pair,
+                     as_balance().amounts, balance_t::amounts_map) {
         if (pair.second <= val)
           return false;
         no_amounts = false;
-      }
+      } foreach_end ();
       return ! no_amounts;
     }
     default:
@@ -1041,11 +1042,11 @@ bool value_t::is_greater_than(const value_t& val) const
     case INTEGER:
     case AMOUNT: {
       bool no_amounts = true;
-      foreach (const value_t& value, as_sequence()) {
+      foreach_const (const value_t& value, as_sequence(), sequence_t) {
         if (value <= val)
           return false;
         no_amounts = false;
-      }
+      } foreach_end ();
       return ! no_amounts;
     }
     case SEQUENCE: {
@@ -1287,8 +1288,9 @@ void value_t::in_place_negate()
     as_balance_lval().in_place_negate();
     return;
   case SEQUENCE:
-    foreach (value_t& value, as_sequence_lval())
+    foreach (value_t& value, as_sequence_lval(), sequence_t) {
       value.in_place_negate();
+    } foreach_end ();
     return;
   default:
     break;
@@ -1321,8 +1323,9 @@ void value_t::in_place_not()
     set_boolean(as_string().empty());
     return;
   case SEQUENCE:
-    foreach (value_t& value, as_sequence_lval())
+    foreach (value_t& value, as_sequence_lval(), sequence_t) {
       value.in_place_not();
+    } foreach_end ();
     return;
   default:
     break;
@@ -1468,8 +1471,9 @@ void value_t::in_place_reduce()
     as_balance_lval().in_place_reduce();
     return;
   case SEQUENCE:
-    foreach (value_t& value, as_sequence_lval())
+    foreach (value_t& value, as_sequence_lval(), sequence_t) {
       value.in_place_reduce();
+    } foreach_end ();
     return;
   default:
     return;
@@ -1488,8 +1492,9 @@ void value_t::in_place_unreduce()
     as_balance_lval().in_place_unreduce();
     return;
   case SEQUENCE:
-    foreach (value_t& value, as_sequence_lval())
+    foreach (value_t& value, as_sequence_lval(), sequence_t) {
       value.in_place_unreduce();
+    } foreach_end ();
     return;
   default:
     return;
@@ -1532,8 +1537,9 @@ void value_t::in_place_round()
     as_balance_lval().in_place_round();
     return;
   case SEQUENCE:
-    foreach (value_t& value, as_sequence_lval())
+    foreach (value_t& value, as_sequence_lval(), sequence_t) {
       value.in_place_round();
+    } foreach_end ();
     return;
   default:
     break;
@@ -1555,8 +1561,9 @@ void value_t::in_place_truncate()
     as_balance_lval().in_place_truncate();
     return;
   case SEQUENCE:
-    foreach (value_t& value, as_sequence_lval())
+    foreach (value_t& value, as_sequence_lval(), sequence_t) {
       value.in_place_truncate();
+    } foreach_end ();
     return;
   default:
     break;
@@ -1578,8 +1585,9 @@ void value_t::in_place_floor()
     as_balance_lval().in_place_floor();
     return;
   case SEQUENCE:
-    foreach (value_t& value, as_sequence_lval())
+    foreach (value_t& value, as_sequence_lval(), sequence_t) {
       value.in_place_floor();
+    } foreach_end ();
     return;
   default:
     break;
@@ -1601,8 +1609,9 @@ void value_t::in_place_unround()
     as_balance_lval().in_place_unround();
     return;
   case SEQUENCE:
-    foreach (value_t& value, as_sequence_lval())
+    foreach (value_t& value, as_sequence_lval(), sequence_t) {
       value.in_place_unround();
+    } foreach_end ();
     return;
   default:
     break;
@@ -1664,8 +1673,9 @@ value_t value_t::strip_annotations(const keep_details_t& what_to_keep) const
 
   case SEQUENCE: {
     sequence_t temp;
-    foreach (const value_t& value, as_sequence())
+    foreach_const (const value_t& value, as_sequence(), sequence_t) {
       temp.push_back(new value_t(value.strip_annotations(what_to_keep)));
+    } foreach_end ();
     return temp;
   }
 
@@ -1792,14 +1802,14 @@ void value_t::print(std::ostream&       out,
   case SEQUENCE: {
     out << '(';
     bool first = true;
-    foreach (const value_t& value, as_sequence()) {
+    foreach_const (const value_t& value, as_sequence(), sequence_t) {
       if (first)
         first = false;
       else
         out << ", ";
 
       value.print(out, first_width, latter_width, flags);
-    }
+    } foreach_end ();
     out << ')';
     break;
   }
@@ -1862,7 +1872,7 @@ void value_t::dump(std::ostream& out, const bool relaxed) const
 
   case STRING:
     out << '"';
-    foreach (const char& ch, as_string()) {
+    foreach_const (const char& ch, as_string(), string) {
       switch (ch) {
       case '"':
         out << "\\\"";
@@ -1874,7 +1884,7 @@ void value_t::dump(std::ostream& out, const bool relaxed) const
         out << ch;
         break;
       }
-    }
+    } foreach_end ();
     out << '"';
     break;
 
@@ -1895,14 +1905,14 @@ void value_t::dump(std::ostream& out, const bool relaxed) const
   case SEQUENCE: {
     out << '(';
     bool first = true;
-    foreach (const value_t& value, as_sequence()) {
+    foreach_const (const value_t& value, as_sequence(), sequence_t) {
       if (first)
         first = false;
       else
         out << ", ";
 
       value.dump(out, relaxed);
-    }
+    } foreach_end ();
     out << ')';
     break;
   }
@@ -1997,8 +2007,10 @@ void to_xml(std::ostream& out, const value_t& value)
 
   case value_t::SEQUENCE: {
     push_xml y(out, "sequence");
-    foreach (const value_t& member, value.as_sequence())
+    foreach_const (const value_t& member, value.as_sequence(),
+                   value_t::sequence_t) {
       to_xml(out, member);
+    } foreach_end ();
     break;
   }
 

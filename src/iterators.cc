@@ -89,15 +89,15 @@ void posts_commodities_iterator::reset(journal_t& journal)
 
   std::map<string, xact_t *> xacts_by_commodity;
 
-  foreach (commodity_t * comm, commodities) {
+  foreach (commodity_t * comm, commodities, std::set<commodity_t *>) {
     if (optional<commodity_t::varied_history_t&> history =
         comm->varied_history()) {
       account_t * account = journal.master->find_account(comm->symbol());
 
       foreach (commodity_t::history_by_commodity_map::value_type& pair,
-               history->histories) {
+               history->histories, commodity_t::history_by_commodity_map) {
         foreach (commodity_t::history_map::value_type& hpair,
-                 pair.second.prices) {
+                 pair.second.prices, commodity_t::history_map) {
           xact_t * xact;
           string   symbol = hpair.second.commodity().symbol();
 
@@ -116,13 +116,13 @@ void posts_commodities_iterator::reset(journal_t& journal)
 
           bool post_already_exists = false;
 
-          foreach (post_t * post, xact->posts) {
+          foreach (post_t * post, xact->posts, posts_list) {
             if (post->_date  == hpair.first.date() &&
                 post->amount == hpair.second) {
               post_already_exists = true;
               break;
             }
-          }
+          } foreach_end ();
 
           if (! post_already_exists) {
             post_t& temp = temps.create_post(*xact, account);
@@ -131,10 +131,10 @@ void posts_commodities_iterator::reset(journal_t& journal)
 
             temp.xdata().datetime = hpair.first;
           }
-        }
-      }
+        } foreach_end ();
+      } foreach_end ();
     }
-  }
+  } foreach_end ();
 
   xacts.xacts_i   = xact_temps.begin();
   xacts.xacts_end = xact_temps.end();
@@ -192,9 +192,10 @@ void sorted_accounts_iterator::push_back(account_t& account)
 
 #if defined(DEBUG_ON)
     if (SHOW_DEBUG("accounts.sorted")) {
-      foreach (account_t * account, accounts_list.back())
+      foreach (account_t * account, accounts_list.back(), accounts_deque_t) {
         DEBUG("accounts.sorted",
               "Account (flat): " << account->fullname());
+      } foreach_end ();
     }
 #endif
   } else {
@@ -208,25 +209,27 @@ void sorted_accounts_iterator::push_back(account_t& account)
 void sorted_accounts_iterator::push_all(account_t& account,
                                         accounts_deque_t& deque)
 {
-  foreach (accounts_map::value_type& pair, account.accounts) {
+  foreach (accounts_map::value_type& pair, account.accounts, accounts_map) {
     deque.push_back(pair.second);
     push_all(*pair.second, deque);
-  }
+  } foreach_end ();
 }
 
 void sorted_accounts_iterator::sort_accounts(account_t& account,
                                              accounts_deque_t& deque)
 {
-  foreach (accounts_map::value_type& pair, account.accounts)
+  foreach (accounts_map::value_type& pair, account.accounts, accounts_map) {
     deque.push_back(pair.second);
+  } foreach_end ();
 
   std::stable_sort(deque.begin(), deque.end(),
                    compare_items<account_t>(sort_cmp));
 
 #if defined(DEBUG_ON)
   if (SHOW_DEBUG("accounts.sorted")) {
-    foreach (account_t * account, deque)
+    foreach (account_t * account, deque, accounts_deque_t) {
       DEBUG("accounts.sorted", "Account: " << account->fullname());
+    } foreach_end ();
   }
 #endif
 }

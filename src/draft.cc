@@ -69,14 +69,16 @@ void draft_t::xact_template_t::dump(std::ostream& out) const
     bool has_only_from = true;
     bool has_only_to   = true;
 
-    foreach (const post_template_t& post, posts) {
+    foreach_const (const post_template_t& post, posts,
+                   std::list<post_template_t>) {
       if (post.from)
         has_only_to = false;
       else
         has_only_from = false;
-    }
+    } foreach_end ();
 
-    foreach (const post_template_t& post, posts) {
+    foreach_const (const post_template_t& post, posts,
+                   std::list<post_template_t>) {
       straccstream accum;
       out << std::endl
           << ACCUM(accum << _("[Posting \"%1\"]")
@@ -96,7 +98,7 @@ void draft_t::xact_template_t::dump(std::ostream& out) const
       if (post.cost)
         out << _("  Cost:         ") << *post.cost_operator
             << " " << *post.cost << std::endl;
-    }
+    } foreach_end ();
   }
 }
 
@@ -220,12 +222,13 @@ void draft_t::parse_args(const value_t& args)
         tmpl->posts.back().account_mask && ! tmpl->posts.back().amount)
       tmpl->posts.back().from = true;
 
-    foreach (xact_template_t::post_template_t& post, tmpl->posts) {
+    foreach (xact_template_t::post_template_t& post, tmpl->posts,
+             std::list<xact_template_t::post_template_t>) {
       if (post.from)
         has_only_to = false;
       else
         has_only_from = false;
-    }
+    } foreach_end ();
 
     if (has_only_from) {
       tmpl->posts.push_front(xact_template_t::post_template_t());
@@ -307,10 +310,10 @@ xact_t * draft_t::insert(journal_t& journal)
     if (matching) {
       DEBUG("draft.xact", "Template had no postings, copying from match");
 
-      foreach (post_t * post, matching->posts) {
+      foreach (post_t * post, matching->posts, posts_list) {
         added->add_post(new post_t(*post));
         added->posts.back()->set_state(item_t::UNCLEARED);
-      }
+      } foreach_end ();
     } else {
       throw_(std::runtime_error,
              _("No accounts, and no past transaction matching '%1'")
@@ -320,15 +323,17 @@ xact_t * draft_t::insert(journal_t& journal)
     DEBUG("draft.xact", "Template had postings");
 
     bool any_post_has_amount = false;
-    foreach (xact_template_t::post_template_t& post, tmpl->posts) {
+    foreach (xact_template_t::post_template_t& post, tmpl->posts,
+             std::list<xact_template_t::post_template_t>) {
       if (post.amount) {
         DEBUG("draft.xact", "  and at least one has an amount specified");
         any_post_has_amount = true;
         break;
       }
-    }
+    } foreach_end ();
 
-    foreach (xact_template_t::post_template_t& post, tmpl->posts) {
+    foreach (xact_template_t::post_template_t& post, tmpl->posts,
+             std::list<xact_template_t::post_template_t>) {
       std::auto_ptr<post_t> new_post;
 
       commodity_t * found_commodity = NULL;
@@ -338,14 +343,14 @@ xact_t * draft_t::insert(journal_t& journal)
           DEBUG("draft.xact",
                 "Looking for matching posting based on account mask");
 
-          foreach (post_t * x, matching->posts) {
+          foreach (post_t * x, matching->posts, posts_list) {
             if (post.account_mask->match(x->account->fullname())) {
               new_post.reset(new post_t(*x));
               DEBUG("draft.xact",
                     "Founding posting from line " << x->pos->beg_line);
               break;
             }
-          }
+          } foreach_end ();
         } else {
           if (post.from) {
             for (posts_list::reverse_iterator j = matching->posts.rbegin();
@@ -405,14 +410,14 @@ xact_t * draft_t::insert(journal_t& journal)
           for (xacts_list::reverse_iterator j = journal.xacts.rbegin();
                j != journal.xacts.rend();
                j++) {
-            foreach (post_t * x, (*j)->posts) {
+            foreach (post_t * x, (*j)->posts, posts_list) {
               if (x->account == acct && ! x->amount.is_null()) {
                 new_post.reset(new post_t(*x));
                 DEBUG("draft.xact",
                       "Found account in journal postings, setting new posting");
                 break;
               }
-            }
+            } foreach_end ();
           }
 
           new_post->account = acct;
@@ -493,7 +498,7 @@ xact_t * draft_t::insert(journal_t& journal)
       added->posts.back()->set_state(item_t::UNCLEARED);
 
       DEBUG("draft.xact", "Added new posting to derived entry");
-    }
+    } foreach_end ();
   }
 
   if (! journal.add_xact(added.get()))

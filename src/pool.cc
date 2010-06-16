@@ -390,14 +390,16 @@ void commodity_pool_t::print_pricemap(std::ostream&               out,
 
   comm_map_t comm_map;
 
-  foreach (const commodities_map::value_type& comm_pair, commodities) {
+  foreach_const (const commodities_map::value_type& comm_pair, commodities,
+           commodities_map) {
     commodity_t * comm(&comm_pair.second->strip_annotations(keep));
     comm_map.insert(comm_map_t::value_type(comm, NULL));
-  }
+  } foreach_end ();
 
   out << "digraph commodities {\n";
 
-  foreach (const comm_map_t::value_type& comm_pair, comm_map) {
+  foreach_const (const comm_map_t::value_type& comm_pair, comm_map,
+                 comm_map_t) {
     commodity_t * comm(comm_pair.first);
     if (comm->has_flags(COMMODITY_BUILTIN))
       continue;
@@ -413,19 +415,19 @@ void commodity_pool_t::print_pricemap(std::ostream&               out,
          comm != commodity_pool_t::current_pool->default_commodity)) {
       if (optional<commodity_t::varied_history_t&> vhist =
           comm->varied_history()) {
-        foreach (const commodity_t::history_by_commodity_map::value_type& pair,
-                 vhist->histories) {
+        foreach_const (const commodity_t::history_by_commodity_map::value_type& pair,
+                       vhist->histories, commodity_t::history_by_commodity_map) {
           datetime_t most_recent;
           amount_t   most_recent_amt;
-          foreach (const commodity_t::history_map::value_type& inner_pair,
-                   pair.second.prices) {
+          foreach_const (const commodity_t::history_map::value_type& inner_pair,
+                         pair.second.prices, commodity_t::history_map) {
             if ((most_recent.is_not_a_date_time() ||
                  inner_pair.first > most_recent) &&
                 (! moment || inner_pair.first <= moment)) {
               most_recent     = inner_pair.first;
               most_recent_amt = inner_pair.second;
             }
-          }
+          } foreach_end ();
 
           if (! most_recent.is_not_a_date_time()) {
             out << "    ";
@@ -446,10 +448,10 @@ void commodity_pool_t::print_pricemap(std::ostream&               out,
                 << format_date(most_recent.date(), FMT_WRITTEN)
                 << "\" fontcolor=\"#008e28\"];\n";
           }
-        }
+        } foreach_end ();
       }
     }
-  }
+  } foreach_end ();
 
   out << "}\n";
 }

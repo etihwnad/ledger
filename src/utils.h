@@ -523,7 +523,41 @@ inline void check_for_signal() {
  */
 /*@{*/
 
-#define foreach BOOST_FOREACH
+#define foreach(DECL, EXPR, TYPE)                       \
+  {                                                     \
+    TYPE::iterator _end = (EXPR).end();                 \
+    for (TYPE::iterator _iter = (EXPR).begin();         \
+         _iter != _end;                                 \
+         _iter++) {                                     \
+      DECL(*_iter);
+
+#define foreach_const(DECL, EXPR, TYPE)                 \
+  {                                                     \
+    TYPE::const_iterator _end = (EXPR).end();           \
+    for (TYPE::const_iterator _iter = (EXPR).begin();   \
+         _iter != _end;                                 \
+         _iter++) {                                     \
+      DECL(*_iter);
+
+#define foreach_end()                           \
+      }                                         \
+  }
+
+#define reverse_foreach(DECL, EXPR, TYPE)                       \
+  {                                                             \
+    TYPE::reverse_iterator _end = (EXPR).end();                 \
+    for (TYPE::reverse_iterator _iter = (EXPR).begin();         \
+         _iter != _end;                                         \
+         _iter++) {                                             \
+      DECL(*_iter);
+
+#define reverse_foreach_const(DECL, EXPR, TYPE)                 \
+  {                                                             \
+    TYPE::const_reverse_iterator _end = (EXPR).rend();          \
+    for (TYPE::const_reverse_iterator _iter = (EXPR).rbegin();  \
+         _iter != _end;                                         \
+         _iter++) {                                             \
+      DECL(*_iter);
 
 namespace ledger {
 
@@ -694,7 +728,7 @@ public:
 
   static string guard(const string& str) {
     std::ostringstream buf;
-    foreach (const char& ch, str) {
+    foreach_const (const char& ch, str, string) {
       switch (ch) {
       case '<':
         buf << "&lt;";
@@ -709,7 +743,7 @@ public:
         buf << ch;
         break;
       }
-    }
+    } foreach_end ();
     return buf.str();
   }
 };

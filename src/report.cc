@@ -648,12 +648,12 @@ value_t report_t::fn_quoted(call_scope_t& args)
   std::ostringstream out;
 
   out << '"';
-  foreach (const char ch, args.get<string>(0)) {
+  foreach_const (const char ch, args.get<string>(0), string) {
     if (ch == '"')
       out << "\\\"";
     else
       out << ch;
-  }
+  } foreach_end ();
   out << '"';
 
   return string_value(out.str());
@@ -663,12 +663,13 @@ value_t report_t::fn_join(call_scope_t& args)
 {
   std::ostringstream out;
 
-  foreach (const char ch, args.get<string>(0)) {
+  foreach_const (const char ch, args.get<string>(0), string) {
     if (ch != '\n')
       out << ch;
     else
       out << "\\n";
-  }
+  } foreach_end ();
+
   return string_value(out.str());
 }
 

@@ -67,17 +67,20 @@ namespace {
       out << "</account>\n";
     }
 
-    foreach (const accounts_map::value_type& pair, acct->accounts)
+    foreach_const (const accounts_map::value_type& pair, acct->accounts,
+                   accounts_map) {
       xml_account(out, pair.second);
+    } foreach_end ();
   }
 
   void xml_transaction(std::ostream& out, const xact_t * xact) {
     to_xml(out, *xact);
 
-    foreach (const post_t * post, xact->posts)
+    foreach_const (const post_t * post, xact->posts, posts_list) {
       if (post->has_xdata() &&
           post->xdata().has_flags(POST_EXT_VISITED))
         to_xml(out, *post);
+    } foreach_end ();
 
     out << "</transaction>\n";
   }
@@ -91,10 +94,10 @@ void format_xml::flush()
   out << "<ledger version=\"" << VERSION << "\">\n";
 
   out << "<commodities>\n";
-  foreach (const commodities_pair& pair, commodities) {
+  foreach_const (const commodities_pair& pair, commodities, commodities_map) {
     to_xml(out, *pair.second, true);
     out << '\n';
-  }
+  } foreach_end ();
   out << "</commodities>\n";
 
   out << "<accounts>\n";
@@ -102,8 +105,9 @@ void format_xml::flush()
   out << "</accounts>\n";
 
   out << "<transactions>\n";
-  foreach (const xact_t * xact, transactions)
+  foreach_const (const xact_t * xact, transactions, std::deque<xact_t *>) {
     xml_transaction(out, xact);
+  } foreach_end ();
   out << "</transactions>\n";
 
   out << "</ledger>\n";

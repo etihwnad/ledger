@@ -360,7 +360,7 @@ namespace {
     post_t& post(args.context<post_t>());
     expr_t::ptr_op_t expr(args.get<expr_t::ptr_op_t>(0));
 
-    foreach (post_t * p, post.xact->posts) {
+    foreach (post_t * p, post.xact->posts, posts_list) {
       bind_scope_t bound_scope(args, *p);
       if (p == &post && args.has<expr_t::ptr_op_t>(1) &&
           ! args.get<expr_t::ptr_op_t>(1)
@@ -373,7 +373,7 @@ namespace {
                           args.depth).to_boolean()) {
         return true;
       }
-    }
+    } foreach_end ();
     return false;
   }
 
@@ -382,7 +382,7 @@ namespace {
     post_t& post(args.context<post_t>());
     expr_t::ptr_op_t expr(args.get<expr_t::ptr_op_t>(0));
 
-    foreach (post_t * p, post.xact->posts) {
+    foreach (post_t * p, post.xact->posts, posts_list) {
       bind_scope_t bound_scope(args, *p);
       if (p == &post && args.has<expr_t::ptr_op_t>(1) &&
           ! args.get<expr_t::ptr_op_t>(1)
@@ -395,7 +395,7 @@ namespace {
                             args.depth).to_boolean()) {
         return false;
       }
-    }
+    } foreach_end();
     return true;
   }
 }
@@ -553,11 +553,11 @@ amount_t post_t::resolve_expr(scope_t& scope, expr_t& expr)
 std::size_t post_t::xact_id() const
 {
   std::size_t id = 1;
-  foreach (post_t * p, xact->posts) {
+  foreach (post_t * p, xact->posts, posts_list) {
     if (p == this)
       return id;
     id++;
-  }
+  } foreach_end ();
   assert(! "Failed to find posting within its transaction");
   return 0;
 }
@@ -565,11 +565,11 @@ std::size_t post_t::xact_id() const
 std::size_t post_t::account_id() const
 {
   std::size_t id = 1;
-  foreach (post_t * p, account->posts) {
+  foreach (post_t * p, account->posts, posts_list) {
     if (p == this)
       return id;
     id++;
-  }
+  } foreach_end ();
   assert(! "Failed to find posting within its transaction");
   return 0;
 }
@@ -718,7 +718,8 @@ void to_xml(std::ostream& out, const post_t& post)
 
   if (post.metadata) {
     push_xml y(out, "metadata");
-    foreach (const item_t::string_map::value_type& pair, *post.metadata) {
+    foreach_const (const item_t::string_map::value_type& pair, *post.metadata,
+                   item_t::string_map) {
       if (pair.second.first) {
         push_xml z(out, "variable");
         {
@@ -733,7 +734,7 @@ void to_xml(std::ostream& out, const post_t& post)
         push_xml z(out, "tag");
         out << y.guard(pair.first);
       }
-    }
+    } foreach_end ();
   }
 
   if (post.xdata_ && ! post.xdata_->total.is_null()) {

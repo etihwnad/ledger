@@ -124,13 +124,15 @@ time_log_t::~time_log_t()
   if (! time_xacts.empty()) {
     std::list<account_t *> accounts;
 
-    foreach (time_xact_t& time_xact, time_xacts)
+    foreach (time_xact_t& time_xact, time_xacts, std::list<time_xact_t>) {
       accounts.push_back(time_xact.account);
+    } foreach_end ();
 
-    foreach (account_t * account, accounts)
+    foreach (account_t * account, accounts, std::list<account_t *>) {
       clock_out_from_timelog(time_xacts,
                              time_xact_t(none, CURRENT_TIME(), account),
                              journal, scope);
+    } foreach_end ();
 
     assert(time_xacts.empty());
   }
@@ -139,10 +141,10 @@ time_log_t::~time_log_t()
 void time_log_t::clock_in(time_xact_t event)
 {
   if (! time_xacts.empty()) {
-    foreach (time_xact_t& time_xact, time_xacts) {
+    foreach (time_xact_t& time_xact, time_xacts, std::list<time_xact_t>) {
       if (event.account == time_xact.account)
         throw parse_error(_("Cannot double check-in to the same account"));
-    }
+    } foreach_end ();
   }
 
   time_xacts.push_back(event);

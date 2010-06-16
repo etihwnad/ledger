@@ -42,12 +42,12 @@ namespace {
   {
     char buf[128];
     char * p = buf;
-    foreach (char ch, name) {
+    foreach_const (const char ch, name, string) {
       if (ch == '-')
         *p++ = '_';
       else
         *p++ = ch;
-    }
+    } foreach_end ();
     *p++ = '_';
     *p = '\0';
 
@@ -228,7 +228,8 @@ strings_list process_arguments(strings_list args, scope_t& scope)
         option_queue.push_back(op_bool_char_tuple(opt.first, opt.second, c));
       }
 
-      foreach (op_bool_char_tuple& o, option_queue) {
+      foreach (op_bool_char_tuple& o, option_queue,
+               std::list<op_bool_char_tuple>) {
         const char * value = NULL;
         if (o.truth && ++i != args.end()) {
           value = (*i).c_str();
@@ -239,7 +240,7 @@ strings_list process_arguments(strings_list args, scope_t& scope)
         }
         process_option(string("-") + o.ch, o.op->as_function(), scope, value,
                        string("-") + o.ch);
-      }
+      } foreach_end ();
     }
   }
 
